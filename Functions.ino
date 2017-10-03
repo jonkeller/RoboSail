@@ -97,4 +97,3 @@ void printToMonitor()
 
   Serial.print("\n"); // Print a new line
 }
-
