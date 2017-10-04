@@ -1,4 +1,4 @@
-/* BoatCodeStarterWindOnly rev 7/31/2017
+/* BoatCodeStarterWind+GPS+Compass rev 7/31/2017
 © 2014-2017 RoboSail
 Find detailed description in Decription tab
 */
