@@ -2,24 +2,45 @@
 © 2014-2017 RoboSail
 Find detailed description in Decription tab
 */
+#define GPS_EXISTS 0
+#define RECEIVER_EXISTS 0
+#define SENSORS_EXIST 0
+#define SERVOS_EXIST 0
+
+#if SERVOS_EXIST
 #include <Servo.h>
-#include <Adafruit_GPS.h>
+#endif
+
 #include <SoftwareSerial.h>
-#include <UsefulCalcs.h>
 #include <Wire.h>
+
+#if GPS_EXISTS
+#include <UsefulCalcs.h>
+#include <Adafruit_GPS.h>
+#endif
+
+#if SENSORS_EXIST
 #include <Adafruit_Sensor.h>
 #include <Adafruit_LSM303_U.h>
+#endif
 #include "RoboSail.h"
+
 boolean displayValues = true;  //true calls function for values to be printed to monitor
 
+#if GPS_EXISTS
 //Fill in min/max parameters for the RC Receiver and WindSensor in RoboSail.h tab
 Adafruit_GPS GPS(&Serial);
 // initialize utility that will convert lat/lon to (x,y) positions in meters
 UsefulCalcs calc(false);
+#endif
 
-//                       Middle      Dock
-float target_lats[3] = { 42.360601,  42.360389};
-float target_lons[3] = {-71.073761, -71.073364};
+//                          Near      Middle      Far
+float buoy_lats[3] = { 42.360601,  42.360763,  42.360925};
+float buoy_lons[3] = {-71.073761, -71.074089, -71.074417};
+bool approach_on_left = true;
+float target_clearance_radius = 10; // TODO Set this to a sane value
+float dock_lat = 42.360389;
+float dock_lon = -71.073364;
 
 float target_lat;
 float target_lon;
@@ -30,33 +51,45 @@ void setup() {
   Serial.println("In setup()");
   pinMode(LED_BUILTIN, OUTPUT);
   digitalWrite(LED_BUILTIN, HIGH);
+#if SENSORS_EXIST
   accel.begin();
   mag.begin();
+#endif
 
-  Serial.println("\nRoboSail BoatCode - 0.02\n");  //write program name here
+  //Serial.println("\nRoboSail BoatCode - 0.02\n");  //write program name here
   // Set RC receiver and WindSensor on digital input pins
   declarePins();
 
+#if GPS_EXISTS
   Serial.println("Setting up GPS");
   checkGPS();
+#endif
+#if SENSORS_EXIST
   Serial.println("Setting up Compass");
   checkCompass();
+#endif
   Serial.println("Ready to loop");
   digitalWrite(LED_BUILTIN, LOW);
-  test_find_absolute_angle(); // TODO Remove
 }
 
 void loop() {
-  return; // TODO Remove
-  Serial.println("I am in loop");
+  Serial.println("In loop()");
   //*********** Read in data from the RC receiver and sensors *********
+#if RECEIVER_EXISTS
   readReceiver();
-  readWind();
-  //readAccel();
-  //readGPS();  //puts values in "start" and "relative" variable
+#else
+  rudderPosition = 0;
+  sailPosition = 90;
+#endif
 
-  //Read heading and tilt from the Compass
-  //readCompassAccel();
+#if SENSORS_EXIST
+  readWind();
+  readAccel();
+  readCompassAccel(); //Read heading and tilt from the Compass
+#endif
+#if GPS_EXISTS
+  readGPS();  //puts values in "start" and "relative" variable
+#endif
 
   // You now have values from the RC Receiver and Sensors in these variables: 
   // rudderPosition, sailPosition, and windAngle, 
@@ -88,24 +121,32 @@ void loop() {
   }
 
   /********************* send commands to motors *************************/
+#if SERVOS_EXIST
   driveSailServo(sailPosition);
   driveRudderServo(rudderPosition);
+#endif
   
   if (displayValues) {printToMonitor();}
   
 } //end of loop()
 
 void choose_target() {
-  // TODO: Keep track of which target is next, whether to approach it on the left or right, and by how wide a margin
-  target_lat = target_lats[0];
-  target_lon = target_lons[0];
+  // TODO: Keep track of which buoy is next, whether to approach it on the left or right, and by how wide a margin
+  target_lat = buoy_lats[0];
+  target_lon = buoy_lons[0];
 }
 
 void set_rudder() {
   // Point at the target, unless that would put us in irons,
   // in which case go at a IRONS_DEG-degree angle toward-ish it
-  float absolute_angle = find_absolute_angle(GPS.latitudeDegrees, GPS.longitudeDegrees, target_lat, target_lon);
-  Serial.print("Want to head at angle: "); Serial.println(absolute_angle);
+  float absolute_angle = find_absolute_angle(
+#if GPS_EXISTS 
+    GPS.latitudeDegrees, GPS.longitudeDegrees,
+#else
+    dock_lat, dock_lon,
+#endif
+    target_lat, target_lon);
+  Serial.print("Want to head at angle (degrees, East=0): "); Serial.println(absolute_angle);
   Serial.print("Current heading: "); Serial.println(robosailHeading);
 
   float bearing = absolute_angle - robosailHeading;
@@ -129,15 +170,14 @@ void set_rudder() {
 // order of tens of meters.
 // This gives the graph-paper angle, i.e. 0 = to the right, 90 = up
 float find_absolute_angle(float from_lat, float from_lon, float to_lat, float to_lon) {
+  Serial.print("Finding angle from ("); Serial.print(from_lat, 6); Serial.print(","); Serial.print(from_lon, 6); Serial.print(") -> ("); Serial.print(to_lat, 6); Serial.print(","); Serial.print(to_lon, 6); Serial.println(")");
   float lat_delta = to_lat - from_lat;
   float lon_delta = to_lon - from_lon;
-  float angle;
-  if (abs(lon_delta) <= 0.0001) {
-    angle = lon_delta > 0 ? 0 : 180;
-  } else {
-    angle = atan2(lat_delta, lon_delta);    
-  }
+  Serial.print("lat_delta: "); Serial.print(lat_delta, 6); Serial.print("\tlon_delta: "); Serial.println(lon_delta, 6);
+  float angle = atan2(lat_delta, lon_delta);    
+  Serial.print("Radians: "); Serial.println(angle, 6);
   angle = angle * 57296 / 1000; // Radians to degrees
+  Serial.print("Degrees: "); Serial.println(angle);
   return angle;
 }
 
@@ -147,40 +187,5 @@ void set_sail() {
   Serial.print("Autopilot sail position:");
   Serial.println(sailPosition);
   // TODO Pull it in a little and then let it out when gybing
-}
-
-void test_find_absolute_angle() {
-  float angle;
-  angle = find_absolute_angle(0, 0, 100, 0);
-  Serial.print("North: ");
-  Serial.println(angle);
-
-  angle = find_absolute_angle(0, 0, 100, 100);
-  Serial.print("Northwest: ");
-  Serial.println(angle);
-
-  angle = find_absolute_angle(10, 10, 10, 20);
-  Serial.print("West: ");
-  Serial.println(angle);
-
-  angle = find_absolute_angle(10, 10, 0, 20);
-  Serial.print("Southwest: ");
-  Serial.println(angle);
-
-  angle = find_absolute_angle(39, -86, 18, -86);
-  Serial.print("South: ");
-  Serial.println(angle);
-
-  angle = find_absolute_angle(39, -86, 19, -66);
-  Serial.print("Southeast: ");
-  Serial.println(angle);
-
-  angle = find_absolute_angle(39, -86, 39, 5);
-  Serial.print("East: ");
-  Serial.println(angle);
-
-  angle = find_absolute_angle(39, -86, 40, -85);
-  Serial.print("Northeast: ");
-  Serial.println(angle);  
 }
 

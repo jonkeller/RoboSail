@@ -1,4 +1,4 @@
-
+#if GPS_EXISTS
 // Interrupt is called once a millisecond, looks for any new GPS data, and stores it
 SIGNAL(TIMER0_COMPA_vect) {
   GPS.read(); // reads char (if available) into internal buffer in GPS object
@@ -56,7 +56,9 @@ if (GPS.newNMEAreceived())
     }
   }
 }
+#endif
 
+#if SENSORS_EXIST
 void readCompassAccel()  //reads Compass to get heading and tilt
 {
   float ax, ay, az, mx, my, mz;
@@ -110,3 +112,4 @@ void readCompassAccel()  //reads Compass to get heading and tilt
   //define roll for RoboSail as rolling to Port side is positive, rolling to Starboard is negative
   robosailRoll  = -1 * roll; 
 }
+#endif

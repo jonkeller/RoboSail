@@ -5,11 +5,14 @@ void declarePins()
   pinMode(SAIL_RC_PIN, INPUT);
   pinMode(WIND_PIN, INPUT);
 
+#if SERVOS_EXIST
   // attach the servos to the proper pins
   rudderServo.attach(RUDDER_SERVO_PIN);
   sailServo.attach(SAIL_SERVO_PIN);
+#endif
 }
 
+#if GPS_EXISTS
 void checkGPS()
 {  //Set Up GPS and wait for fix on position
   GPS.begin(9600);  //default baud rate for Adafruit MTK GPS's
@@ -19,22 +22,13 @@ void checkGPS()
   while (start_pos_found == false)  //loop code will not start until GPS is ready
   { readGPS();}
 }
+#endif
 
-void checkCompass()
-{// Set up Compass and check that it is connected
-  mag.enableAutoRange(true);
-    if(!mag.begin() || !accel.begin()) //Initialize the sensor
-    {
-    /* There was a problem detecting the LSM303 ... check your connections */
-    Serial.println("No LSM303 Compass detected ... Check your wiring!");
-    while(1); }
-}
-/*********Functions to read RC Transmitter/Receiver and Sensors *****/
+#if RECEIVER_EXISTS
  // Takes in the PWM signals from the RC Receiver and translate
  // them to the servo positions in degrees.
  // Takes in the PWM signals from the WindSensor and translate 
  // it to the windvane position in degrees.
- 
  void readReceiver()
  {
   // Read the command pulse from the RC receiver
@@ -44,11 +38,24 @@ void checkCompass()
   rudderPosition = map(rudderPulseWidth, RUDDER_LOW, RUDDER_HIGH, -60, 60);
   sailPosition = map(sailPulseWidth, SAIL_LOW, SAIL_HIGH, 0, 90);
  }
- 
+#endif
+
+#if SENSORS_EXIST
+void checkCompass()
+{// Set up Compass and check that it is connected
+  mag.enableAutoRange(true);
+    if(!mag.begin() || !accel.begin()) //Initialize the sensor
+    {
+    /* There was a problem detecting the LSM303 ... check your connections */
+    Serial.println("No LSM303 Compass detected ... Check your wiring!");
+    while(1); }
+}
+
  void readWind()
  {
   // Read values from the WindSensor
   windPulseWidth = pulseIn(WIND_PIN, HIGH);
+  Serial.print("Wind pulse width: "); Serial.println(windPulseWidth);
   // Convert the wind angle to degrees from PWM.  Range -180 to +180
   windAngle = map(windPulseWidth, 0, WIND_HIGH, 180, -180);
   windAngle = constrain(windAngle, -180, 180);
@@ -71,7 +78,9 @@ void readAccel()   /* Read the Accelerometer event and put data in variables */
  // The Rudder servo motor ranges from 0 to 180 with 90 deg in the center
  // The Sailwinch servo is at ~55 deg when full-in, which we think of as 0 deg,
  // and ~125 deg when full out, which we think of as 90 deg
+#endif
 
+#if SERVOS_EXIST
 void driveSailServo(int sailPos)
 {
   if ((sailPos >= 0) && (sailPos <= 90))  // the command in degrees is valid
@@ -100,12 +109,13 @@ void driveRudderServo(int rudderPos)
     }
 }
 /****************************************************/
+#endif
 
 // Function to Print out all values for debug.
 void printToMonitor()
 {
   Serial.print("Wind Angle: ");
-  Serial.print(windAngle);
+  Serial.println(windAngle);
  
   Serial.print("\t Sail, from RC: ");
   Serial.print(sailPulseWidth);
@@ -117,7 +127,8 @@ void printToMonitor()
   Serial.print("  angle out: ");
   Serial.print(rudderServoOut);
   Serial.print("\n"); // Print a new line
- 
+
+#if RUNNING_ON_REAL_BOAT
   Serial.print("Fix: "); Serial.print(GPSfix);
   Serial.print(" quality: "); Serial.print(GPSqual);
   Serial.print(" satellites: "); Serial.println(GPSsat);
@@ -128,6 +139,7 @@ void printToMonitor()
   Serial.print("Roll raw value: "); Serial.print(robosailRollAccel);
   Serial.print("Roll in deg: "); Serial.print(robosailRoll);
   Serial.print(",              Heading: "); Serial.println(robosailHeading);
+#endif
   Serial.println();
 }
 
