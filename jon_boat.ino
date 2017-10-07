@@ -2,10 +2,10 @@
 © 2014-2017 RoboSail
 Find detailed description in Decription tab
 */
-#define GPS_EXISTS 0
-#define RECEIVER_EXISTS 0
-#define SENSORS_EXIST 0
-#define SERVOS_EXIST 0
+#define GPS_EXISTS 1
+#define RECEIVER_EXISTS 1
+#define SENSORS_EXIST 1
+#define SERVOS_EXIST 1
 
 #if SERVOS_EXIST
 #include <Servo.h>
@@ -23,6 +23,7 @@ Find detailed description in Decription tab
 #include <Adafruit_Sensor.h>
 #include <Adafruit_LSM303_U.h>
 #endif
+
 #include "RoboSail.h"
 
 boolean displayValues = true;  //true calls function for values to be printed to monitor
@@ -34,11 +35,14 @@ Adafruit_GPS GPS(&Serial);
 UsefulCalcs calc(false);
 #endif
 
-//                          Near      Middle      Far
+//                        Near       Middle       Far
 float buoy_lats[3] = { 42.360601,  42.360763,  42.360925};
 float buoy_lons[3] = {-71.073761, -71.074089, -71.074417};
+const int num_buoys = 3;
+int next_buoy = 0;
 bool approach_on_left = true;
-float target_clearance_radius = 10; // TODO Set this to a sane value
+bool ascending_buoys = true; // ...e.g. true if we're going in the dirction of 0->1->2, false if we're coming back.
+float target_clearance_radius = .00006; // Should be about 21 feet in latitude, 15 feet in longitude (in Boston). Good enough.
 float dock_lat = 42.360389;
 float dock_lon = -71.073364;
 
@@ -56,7 +60,7 @@ void setup() {
   mag.begin();
 #endif
 
-  //Serial.println("\nRoboSail BoatCode - 0.02\n");  //write program name here
+  Serial.println("\nRoboSail BoatCode - 0.02\n");  //write program name here
   // Set RC receiver and WindSensor on digital input pins
   declarePins();
 
@@ -131,9 +135,32 @@ void loop() {
 } //end of loop()
 
 void choose_target() {
-  // TODO: Keep track of which buoy is next, whether to approach it on the left or right, and by how wide a margin
-  target_lat = buoy_lats[0];
-  target_lon = buoy_lons[0];
+  /* Option 1:
+  if (passed_buoy) {
+    approach_on_left = !approach_on_left
+    if (ascending_buoys) {
+      if (next_buoy < num_buoys-1) {
+        ++next_buoy;
+      } else {
+        ascending_buoys = false;
+        // Target should be top, then left/right
+      }
+    } else {
+      if (next_buoy > 0) {
+        --next_buoy;
+      } else {
+        ascending_buoys = true;
+        // TODO: Handle if it's time to stop
+        // Target should be bottom, then left/right
+      }
+    }
+  }
+  */
+  /* Option 2:
+   * Set up (num_buoys*2 + 1) waypoints, go through them in sequence
+   */
+  target_lat = buoy_lats[next_buoy];
+  target_lon = buoy_lons[next_buoy];
 }
 
 void set_rudder() {
