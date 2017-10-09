@@ -140,7 +140,8 @@ void loop() {
 #if SENSORS_EXIST
   readWind();
   readAccel();
-  readCompassAccel(); //Read heading and tilt from the Compass
+  //readCompassAccel(); //Read heading and tilt from the Compass
+  readCompass_Adafruit();
 #endif
 #if GPS_EXISTS
   readGPS();  //puts values in "start" and "relative" variable
