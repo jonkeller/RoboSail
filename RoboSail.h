@@ -52,7 +52,7 @@ float robosailHeading;  //value in degrees, converted to RoboSail FrameofRef
 float robosailRoll;   // converted so Port lean is positive
 
 // Source: http://www.ngdc.noaa.gov/geomag-web/#igrfwmm
-float declination = -14.6067;
+float declination = -14.6375;
 
 #if SENSORS_EXIST
 /* Assign a ID to Accelerometer and Magnetometer and define event */

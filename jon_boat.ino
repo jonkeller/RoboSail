@@ -2,7 +2,7 @@
 © 2014-2017 RoboSail
 Find detailed description in Decription tab
 */
-#define GPS_EXISTS 1
+#define GPS_EXISTS 0
 #define RECEIVER_EXISTS 1
 #define SENSORS_EXIST 1
 #define SERVOS_EXIST 1
@@ -44,8 +44,8 @@ const int num_waypoints = 2*num_buoys + 3;
 float waypoint_lats[num_waypoints];
 float waypoint_lons[num_waypoints];
 int next_waypoint = 0;
-bool passed_waypoint = false; // TODO Update this
 float target_clearance_radius = .00006; // Should be about 21 feet in latitude, 15 feet in longitude (in Boston). Good enough.
+float waypoint_acquisition_clearance_squared = target_clearance_radius*target_clearance_radius/25.0;
 float dock_lat = 42.360389;
 float dock_lon = -71.073364;
 
@@ -186,7 +186,14 @@ void loop() {
 } //end of loop()
 
 void choose_target() {
-  if (passed_waypoint) {
+  if (distance_squared(
+    waypoint_lats[next_waypoint], waypoint_lons[next_waypoint],
+#if GPS_EXISTS 
+    GPS.latitudeDegrees, GPS.longitudeDegrees
+#else
+    dock_lat, dock_lon
+#endif
+    ) < waypoint_acquisition_clearance_squared) {
     ++next_waypoint;
   }
   if (next_waypoint < num_waypoints) {
@@ -196,6 +203,13 @@ void choose_target() {
     target_lat = dock_lat;
     target_lon = dock_lon;
   }
+}
+
+// Squared distance, in units of latitude/longitude degrees.
+// Kind of meaningless since, unless we're at the equator, latitude degrees
+// are longer than longitude degrees.
+float distance_squared(float lat1, float lon1, float lat2, float lon2) {
+  return (lat1-lat2)*(lat1-lat2) + (lon1-lon2)*(lon1-lon2);
 }
 
 void set_rudder() {
@@ -210,19 +224,21 @@ void set_rudder() {
     target_lat, target_lon);
   absolute_angle = rad2deg(absolute_angle);
   Serial.print("Want to head at angle (degrees, East=0): "); Serial.println(absolute_angle);
-  Serial.print("Current heading: "); Serial.println(robosailHeading);
+  Serial.print("Current (Robosail, i.e. East=0) heading: "); Serial.println(robosailHeading);
 
   float bearing = absolute_angle - robosailHeading;
   Serial.print("Desired bearing: "); Serial.println(bearing);
 
-  float bearing_relative_to_wind = windAngle - bearing;
+  float bearing_relative_to_wind = bearing - windAngle;
   Serial.print("Wind angle: "); Serial.println(windAngle);
   Serial.print("Bearing relative to wind: "); Serial.println(bearing_relative_to_wind);
   if (abs(bearing_relative_to_wind) <= IRONS_DEG) {
-    rudderPosition = bearing_relative_to_wind > 0 ? bearing_relative_to_wind+IRONS_DEG : bearing_relative_to_wind-IRONS_DEG;
-    rudderPosition = constrain(rudderPosition, -60, 60);
+    Serial.println("Desired bearing would put us IN IRONS!!");
+    rudderPosition = bearing_relative_to_wind > 0 ? IRONS_DEG : -IRONS_DEG;
+    //rudderPosition = constrain(rudderPosition, -60, 60);
     Serial.print("Rudder position, to avoid irons: "); Serial.println(rudderPosition);
   } else {
+    Serial.println("Not in irons :)");
     rudderPosition = constrain(bearing, -60, 60);
     Serial.print("Rudder position: "); Serial.println(rudderPosition);
   }

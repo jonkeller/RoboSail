@@ -59,6 +59,26 @@ if (GPS.newNMEAreceived())
 #endif
 
 #if SENSORS_EXIST
+// From https://learn.adafruit.com/lsm303-accelerometer-slash-compass-breakout/coding
+void readCompass_Adafruit() {
+  mag.getEvent(&event);
+  heading = (atan2(event.magnetic.y,event.magnetic.x) * 180) / PI;
+  // Normalize to 0-360
+  if (heading < 0)
+  {
+    heading = 360 + heading;
+  }
+  Serial.print("Compass Heading: "); Serial.println(heading);
+  // End Adafruit code
+
+  // Declination: "the angle on the horizontal plane between magnetic north [...] and true north"
+  // Source: https://en.wikipedia.org/wiki/Magnetic_declination
+  heading += declination;
+  robosailHeading = (360 - heading) + 90;
+  if (robosailHeading >= 360) {robosailHeading -= 360;}
+  Serial.print("Robosail Heading: "); Serial.println(robosailHeading);
+}
+
 void readCompassAccel()  //reads Compass to get heading and tilt
 {
   float ax, ay, az, mx, my, mz;
