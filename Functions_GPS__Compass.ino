@@ -68,7 +68,7 @@ void readCompass_Adafruit() {
   {
     heading = 360 + heading;
   }
-  Serial.print("Compass Heading: "); Serial.println(heading);
+  //Serial.print("Compass Heading: "); Serial.println(heading);
   // End Adafruit code
 
   // Declination: "the angle on the horizontal plane between magnetic north [...] and true north"
@@ -76,7 +76,7 @@ void readCompass_Adafruit() {
   heading += declination;
   robosailHeading = (360 - heading) + 90;
   if (robosailHeading >= 360) {robosailHeading -= 360;}
-  Serial.print("Robosail Heading: "); Serial.println(robosailHeading);
+  //Serial.print("Robosail Heading: "); Serial.println(robosailHeading);
 }
 
 void readCompassAccel()  //reads Compass to get heading and tilt

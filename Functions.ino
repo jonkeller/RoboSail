@@ -55,7 +55,7 @@ void checkCompass()
  {
   // Read values from the WindSensor
   windPulseWidth = pulseIn(WIND_PIN, HIGH);
-  Serial.print("Wind pulse width: "); Serial.println(windPulseWidth);
+  //Serial.print("Wind pulse width: "); Serial.println(windPulseWidth);
   // Convert the wind angle to degrees from PWM.  Range -180 to +180
   windAngle = map(windPulseWidth, 0, WIND_HIGH, 180, -180);
   windAngle = constrain(windAngle, -180, 180);

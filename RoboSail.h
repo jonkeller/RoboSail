@@ -2,9 +2,9 @@
 // ****** and WindSensor (using WindSensorTest)
 // ****** and change the values below as needed
 #define RUDDER_HIGH 1900  //nominal 2000
-#define RUDDER_LOW 1100   //nominal 1000
-#define SAIL_HIGH 2000   //nominal 2000
-#define SAIL_LOW 1000    //nominal 1000
+#define RUDDER_LOW 1130   //nominal 1000
+#define SAIL_HIGH 1710   //nominal 2000
+#define SAIL_LOW 1110    //nominal 1000
 #define WIND_HIGH 1023   //nominal 1023
 
 // Pin assignments
