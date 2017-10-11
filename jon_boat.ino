@@ -2,10 +2,17 @@
 © 2014-2017 RoboSail
 Find detailed description in Decription tab
 */
-#define GPS_EXISTS 0
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
+#define GPS_EXISTS 1
 #define RECEIVER_EXISTS 1
 #define SENSORS_EXIST 1
 #define SERVOS_EXIST 1
+#else
+#define GPS_EXISTS 0
+#define RECEIVER_EXISTS 0
+#define SENSORS_EXIST 0
+#define SERVOS_EXIST 0
+#endif
 
 #if SERVOS_EXIST
 #include <Servo.h>
@@ -30,7 +37,12 @@ boolean displayValues = false;  //true calls function for values to be printed t
 
 #if GPS_EXISTS
 //Fill in min/max parameters for the RC Receiver and WindSensor in RoboSail.h tab
-Adafruit_GPS GPS(&Serial);
+#if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
+Adafruit_GPS GPS(&Serial1); // This will only work on a Mega!
+#else
+SoftwareSerial mySerial(3, 2);
+Adafruit_GPS GPS(&mySerial);
+#endif
 // initialize utility that will convert lat/lon to (x,y) positions in meters
 UsefulCalcs calc(false);
 #endif
@@ -44,26 +56,28 @@ const int num_waypoints = 2*num_buoys + 3;
 float waypoint_lats[num_waypoints];
 float waypoint_lons[num_waypoints];
 int next_waypoint = 0;
-const float target_clearance_radius = .00006; // Should be about 21 feet in latitude, 15 feet in longitude (in Boston). Good enough.
-float waypoint_acquisition_clearance_squared = target_clearance_radius*target_clearance_radius/25.0;
+const float target_clearance_radius = .0002; // Should be about 60 feet in latitude, 45 feet in longitude (in Boston). Good enough.
+float waypoint_acquisition_clearance_squared = target_clearance_radius*target_clearance_radius/9.0;
 const float dock_lat = 42.360389;
 const float dock_lon = -71.073364;
 
 float target_lat;
 float target_lon;
 const int IRONS_DEG = 45;
-const float rudder_multiplier = -.1; // -0.3333333;
+const float rudder_multiplier = -.5; // -0.3333333;
 boolean autosail;
 boolean desired_bearing_would_be_irons;
 float absolute_angle;
 float desired_bearing;
 float desired_bearing_relative_to_wind;
+float current_bearing_relative_to_wind;
+boolean currently_in_irons;
 
 void setup() {
   Serial.begin(115200);
   Serial.println("In setup()");
-  pinMode(LED_BUILTIN, OUTPUT);
-  digitalWrite(LED_BUILTIN, HIGH);
+  //pinMode(LED_BUILTIN, OUTPUT);
+  //digitalWrite(LED_BUILTIN, HIGH);
 #if SENSORS_EXIST
 //  accel.begin();
 //  mag.begin();
@@ -81,7 +95,7 @@ void setup() {
   Serial.println("Setting up Compass");
   checkCompass();
 #endif
-  digitalWrite(LED_BUILTIN, LOW);
+  //digitalWrite(LED_BUILTIN, LOW);
 
   setup_waypoints();
   Serial.println("Ready to loop");
@@ -192,9 +206,9 @@ void loop() {
   Serial.print("\tDesired bearing: "); Serial.print(desired_bearing);
   Serial.print("\tWind angle: "); Serial.print(windAngle);
   Serial.print("\tDes. Bearing to wind: "); Serial.print(desired_bearing_relative_to_wind);
+  Serial.print("\tIrons now? "); Serial.print(currently_in_irons?"IRONS!":" safe ");
   Serial.print("\tDes. Bearing->Irons? "); Serial.print(desired_bearing_would_be_irons?"IRONS!":" safe ");
   Serial.print("\tRudder position: "); Serial.println(rudderPosition);
-
 } //end of loop()
 
 void choose_target() {
@@ -240,6 +254,8 @@ void set_rudder() {
 
   desired_bearing_relative_to_wind = desired_bearing - windAngle;
   // TODO: what if in irons now?
+  current_bearing_relative_to_wind = robosailHeading - windAngle;
+  currently_in_irons = abs(current_bearing_relative_to_wind) <= IRONS_DEG;
   if (abs(desired_bearing_relative_to_wind) <= IRONS_DEG) {
     desired_bearing_would_be_irons = true;
     rudderPosition = (desired_bearing_relative_to_wind > 0 ? IRONS_DEG : -IRONS_DEG) * rudder_multiplier;
