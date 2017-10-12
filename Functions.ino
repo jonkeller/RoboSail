@@ -40,17 +40,7 @@ void checkGPS()
  }
 #endif
 
-#if SENSORS_EXIST
-void checkCompass()
-{// Set up Compass and check that it is connected
-  mag.enableAutoRange(true);
-    if(!mag.begin() || !accel.begin()) //Initialize the sensor
-    {
-    /* There was a problem detecting the LSM303 ... check your connections */
-    Serial.println("No LSM303 Compass detected ... Check your wiring!");
-    while(1); }
-}
-
+#if WIND_SENSOR_EXISTS
  void readWind()
  {
   // Read values from the WindSensor
@@ -60,6 +50,18 @@ void checkCompass()
   windAngle = map(windPulseWidth, 0, WIND_HIGH, 180, -180);
   windAngle = constrain(windAngle, -180, 180);
  }
+#endif
+
+#if COMPASS_ACCEL_EXISTS
+void checkCompass()
+{// Set up Compass and check that it is connected
+  mag.enableAutoRange(true);
+    if(!mag.begin() || !accel.begin()) //Initialize the sensor
+    {
+    /* There was a problem detecting the LSM303 ... check your connections */
+    Serial.println("No LSM303 Compass detected ... Check your wiring!");
+    while(1); }
+}
 
 void readAccel()   /* Read the Accelerometer event and put data in variables */ 
 {

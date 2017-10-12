@@ -35,9 +35,15 @@ Servo sailServo;
 // Compass (magnetometer and accelerometer variables
 // These values will need to be adjusted based on your particular compass.
 // Use compassCalibration (in the Orientation library) to determine the correct hard iron calibration.
-float hardiron_x = -11.91;
-float hardiron_y = 5.05;
-float hardiron_z = -1.02;
+// CBI's LSM303:
+//float hardiron_x = -11.91;
+//float hardiron_y = 5.05;
+//float hardiron_z = -1.02;
+
+// Jon's LSM303:
+float hardiron_x = 17.82;
+float hardiron_y = -14.263;
+float hardiron_z = 2.685;
 
 float pitchAccel = 0; //raw accelerometer value
 float rollAccel = 0;  //raw accelerometer value
@@ -54,7 +60,7 @@ float robosailRoll;   // converted so Port lean is positive
 // Source: http://www.ngdc.noaa.gov/geomag-web/#igrfwmm
 float declination = -14.6375;
 
-#if SENSORS_EXIST
+#if COMPASS_ACCEL_EXISTS
 /* Assign a ID to Accelerometer and Magnetometer and define event */
 Adafruit_LSM303_Mag_Unified mag = Adafruit_LSM303_Mag_Unified(12345);
 Adafruit_LSM303_Accel_Unified accel = Adafruit_LSM303_Accel_Unified(54321);

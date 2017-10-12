@@ -58,7 +58,7 @@ if (GPS.newNMEAreceived())
 }
 #endif
 
-#if SENSORS_EXIST
+#if COMPASS_ACCEL_EXISTS
 // From https://learn.adafruit.com/lsm303-accelerometer-slash-compass-breakout/coding
 void readCompass_Adafruit() {
   mag.getEvent(&event);

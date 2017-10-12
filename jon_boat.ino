@@ -5,12 +5,14 @@ Find detailed description in Decription tab
 #if defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
 #define GPS_EXISTS 1
 #define RECEIVER_EXISTS 1
-#define SENSORS_EXIST 1
+#define WIND_SENSOR_EXISTS 1
+#define COMPASS_ACCEL_EXISTS 1
 #define SERVOS_EXIST 1
 #else
 #define GPS_EXISTS 0
 #define RECEIVER_EXISTS 0
-#define SENSORS_EXIST 0
+#define WIND_SENSOR_EXISTS 0
+#define COMPASS_ACCEL_EXISTS 1
 #define SERVOS_EXIST 0
 #endif
 
@@ -26,7 +28,7 @@ Find detailed description in Decription tab
 #include <Adafruit_GPS.h>
 #endif
 
-#if SENSORS_EXIST
+#if COMPASS_ACCEL_EXISTS
 #include <Adafruit_Sensor.h>
 #include <Adafruit_LSM303_U.h>
 #endif
@@ -78,10 +80,6 @@ void setup() {
   Serial.println("In setup()");
   //pinMode(LED_BUILTIN, OUTPUT);
   //digitalWrite(LED_BUILTIN, HIGH);
-#if SENSORS_EXIST
-//  accel.begin();
-//  mag.begin();
-#endif
 
   Serial.println("\nRoboSail BoatCode - 0.02\n");  //write program name here
   // Set RC receiver and WindSensor on digital input pins
@@ -91,7 +89,7 @@ void setup() {
   Serial.println("Setting up GPS");
   checkGPS();
 #endif
-#if SENSORS_EXIST
+#if COMPASS_ACCEL_EXISTS
   Serial.println("Setting up Compass");
   checkCompass();
 #endif
@@ -156,11 +154,13 @@ void loop() {
   sailPosition = 90;
 #endif
 
-#if SENSORS_EXIST
+#if WIND_SENSOR_EXISTS
   readWind();
-  readAccel();
-  //readCompassAccel(); //Read heading and tilt from the Compass
-  readCompass_Adafruit();
+#endif
+#if COMPASS_ACCEL_EXISTS
+  //readAccel();
+  readCompassAccel(); //Read heading and tilt from the Compass
+  //readCompass_Adafruit();
 #endif
 #if GPS_EXISTS
   readGPS();  //puts values in "start" and "relative" variable
@@ -201,14 +201,14 @@ void loop() {
   Serial.print("\tSailpos: "); Serial.print(sailPosition);
   Serial.print("\tSailpos %:"); Serial.print(sailPct);
   Serial.print("\tMode: "); Serial.print(autosail?"*AUTO*":"MANUAL");
-  Serial.print("\tAbs Heading to tgt (degrees, East=0): "); Serial.print(absolute_angle);
-  Serial.print("\trobosailHeading: "); Serial.print(robosailHeading);
-  Serial.print("\tDesired bearing: "); Serial.print(desired_bearing);
-  Serial.print("\tWind angle: "); Serial.print(windAngle);
-  Serial.print("\tDes. Bearing to wind: "); Serial.print(desired_bearing_relative_to_wind);
+  Serial.print("\tAbs Heading to Tgt: "); Serial.print(absolute_angle);
+  Serial.print("\tRobosailHeading: "); Serial.print(robosailHeading);
+  Serial.print("\tDesired Bearing: "); Serial.print(desired_bearing);
+  Serial.print("\tWind Angle: "); Serial.print(windAngle);
   Serial.print("\tIrons now? "); Serial.print(currently_in_irons?"IRONS!":" safe ");
+  Serial.print("\tDes. Bearing->Wind: "); Serial.print(desired_bearing_relative_to_wind);
   Serial.print("\tDes. Bearing->Irons? "); Serial.print(desired_bearing_would_be_irons?"IRONS!":" safe ");
-  Serial.print("\tRudder position: "); Serial.println(rudderPosition);
+  Serial.print("\tRudder Pos: "); Serial.println(rudderPosition);
 } //end of loop()
 
 void choose_target() {
