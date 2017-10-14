@@ -11,7 +11,7 @@ Find detailed description in Decription tab
 #else
   #define GPS_EXISTS 0
   #define RECEIVER_EXISTS 0
-  #define WIND_SENSOR_EXISTS 0
+  #define WIND_SENSOR_EXISTS 1
   #define COMPASS_ACCEL_EXISTS 1
   #define SERVOS_EXIST 0
   #include <SoftwareSerial.h>
@@ -26,19 +26,15 @@ const float rudder_multiplier = -.5; // -0.3333333;
 void setup() {
   Serial.begin(115200);
   Serial.println("In setup()");
-  pinMode(LED_BUILTIN, OUTPUT);
-  digitalWrite(LED_BUILTIN, HIGH);
-
-  Serial.println("\nRoboSail BoatCode - 0.03\n");  //write program name here
-  // Set RC receiver and WindSensor on digital input pins
   declarePins();
+  Serial.println("\nRoboSail BoatCode - 0.04\n");  //write program name here
 
+  digitalWrite(LED_BUILTIN, HIGH);
   initGPS();
-  checkCompass();
-  digitalWrite(LED_BUILTIN, LOW);
-
+  initCompass();
   setup_waypoints();
-  Serial.println("Ready to loop");
+  digitalWrite(LED_BUILTIN, LOW);
+  Serial.println("Setup complete");
 }
 
 void loop() {
@@ -48,22 +44,25 @@ void loop() {
   readReceiver(sailPosition, rudderPosition);
   sailPosition = constrain(sailPosition, 0, 90);
   int sailPct = map(sailPosition, 0, 90, 0, 100);
+  Serial.print("Sail: "); Serial.print(sailPosition);
+  Serial.print("\tSail %:"); Serial.print(sailPct);
 
   int windAngle = readWind();
-  Serial.print("\tWind Angle: "); Serial.print(windAngle);
-  Serial.print(" Sail: "); Serial.print(sailPosition);
-  Serial.print("\tSail %:"); Serial.print(sailPct);
+  Serial.print("\tWind <: "); Serial.print(windAngle);
+  bool currently_in_irons = abs(windAngle) <= IRONS_DEG;
+  Serial.print("\tIrons now? "); Serial.print(currently_in_irons?"IRONS!":" safe ");
+  // TODO: what if in irons now?
   
   bool autosail;
   if (sailPct >= 90) { // Autopilot mode iff sail joystick is at/above 90% 
     autosail = true;
-    Serial.print("*AUTO*");
+    Serial.print("\t*AUTO*");
     rudderPosition = set_rudder(windAngle);
     sailPosition = set_sail(windAngle);
   } else {
     autosail = false;
     resetProgress();
-    Serial.print("MANUAL");
+    Serial.print("\tMANUAL");
   }
   /********************* send commands to motors *************************/
 #if SERVOS_EXIST
@@ -72,25 +71,18 @@ void loop() {
 #endif
 } //end of loop()
 
+int prevRudderPosition = 0;
 int set_rudder(int windAngle) {
-  float heading = 0;
-  float robosailHeading;
-  readCompassAccel(heading, robosailHeading); //Read heading and tilt from the Compass
-
-  float current_bearing_relative_to_wind = robosailHeading - windAngle;
-  bool currently_in_irons = abs(current_bearing_relative_to_wind) <= IRONS_DEG;
-  Serial.print("\tIrons now? "); Serial.print(currently_in_irons?"IRONS!":" safe ");
+  float robosailHeading = getSmoothedRobosailHeading();
 
   // Point at the target, unless that would put us in irons,
   // in which case go at a IRONS_DEG-degree angle toward-ish it
   float absolute_angle = absolute_angle_to_target();
-  float desired_bearing = clamp_angle(absolute_angle - robosailHeading);
+  float desired_bearing = clamp_angle(absolute_angle - robosailHeading); // How much we want to turn (positive = port)
   float desired_bearing_relative_to_wind = clamp_angle(desired_bearing - windAngle);
 
-  // TODO: what if in irons now?
-
   bool desired_bearing_would_be_irons;
-  float rudderPosition;
+  int rudderPosition;
   if (abs(desired_bearing_relative_to_wind) <= IRONS_DEG) {
     desired_bearing_would_be_irons = true;
     rudderPosition = (desired_bearing_relative_to_wind > 0 ? IRONS_DEG : -IRONS_DEG) * rudder_multiplier;
@@ -100,12 +92,18 @@ int set_rudder(int windAngle) {
     rudderPosition = constrain(desired_bearing*rudder_multiplier, -60, 60);
   }
 
-  Serial.print("\tAbs Heading to Tgt: "); Serial.print(absolute_angle);
-  Serial.print("\tCurrent R_Heading: "); Serial.print(robosailHeading);
-  Serial.print("\tDesired Bearing: "); Serial.print(desired_bearing);
+  // If desired_bearing is within 5 degrees of +/-180, and previous rudderPosition was +/-60, don't flip the sign
+  if (abs(desired_bearing) >= 170 && abs(prevRudderPosition) == 60 && abs(rudderPosition) == 60) {
+    rudderPosition = prevRudderPosition;
+  }
+
+  Serial.print("\tCur. RoboHeading: "); Serial.print(robosailHeading); Serial.print("  ");
+  Serial.print("\tAbs Heading to Tgt: "); Serial.print(absolute_angle); Serial.print("  ");
+  Serial.print("\tDes. Bearing: "); Serial.print(desired_bearing);
   Serial.print("\tDes. Bearing->Wind: "); Serial.print(desired_bearing_relative_to_wind);
   Serial.print("\tDes. Irons? "); Serial.print(desired_bearing_would_be_irons?"IRONS!":" safe ");
   Serial.print("\tRudder Pos: "); Serial.println(rudderPosition);
+  prevRudderPosition = rudderPosition;
   return rudderPosition;
 }
 

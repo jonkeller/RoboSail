@@ -1,3 +1,5 @@
+#include "pins.h"
+
 void declarePins() {
 #if WIND_SENSOR_EXISTS
   pinMode(WIND_PIN, INPUT);
@@ -11,5 +13,7 @@ void declarePins() {
   rudderServo.attach(RUDDER_SERVO_PIN);
   sailServo.attach(SAIL_SERVO_PIN);
 #endif
+
+  pinMode(LED_BUILTIN, OUTPUT);
 }
 

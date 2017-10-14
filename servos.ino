@@ -2,10 +2,6 @@
 #include <Servo.h>
 #endif
 
-// Output pins to the servos
-#define RUDDER_SERVO_PIN 8
-#define SAIL_SERVO_PIN 9
-
 #if SERVOS_EXIST
 //create servo objects
 Servo rudderServo;

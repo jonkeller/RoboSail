@@ -21,7 +21,7 @@ Adafruit_LSM303_Accel_Unified accel = Adafruit_LSM303_Accel_Unified(54321);
 sensors_event_t event;
 #endif
 
-void readCompassAccel(float &heading, float &robosailHeading) {
+float readCompassAccel() {
 #if COMPASS_ACCEL_EXISTS
   float ax, ay, az, mx, my, mz;
   float my_adj, mx_adj;
@@ -61,22 +61,38 @@ void readCompassAccel(float &heading, float &robosailHeading) {
   roll = roll * 180/Pi;
   pitch =  pitch * 180/Pi;
   yaw = yaw * 180/Pi;
-  
-  heading = yaw + declination;
-  heading = clamp_angle(heading);
-  
+
   //define roll for RoboSail as rolling to Port side is positive, rolling to Starboard is negative
   //float robosailRoll  = -1 * roll;
-#endif
 
-  //The heading is converted to a frame of reference for RoboSail:
+  float heading = yaw + declination;
+  return clamp_angle(heading);
+#endif
+}
+
+float getRobosailHeading() {
+  float heading = readCompassAccel();
+  // The heading is converted to a frame of reference for RoboSail:
   // East is 0 degrees, North is 90 deg, West is 180 deg, South is 270 deg. 
-  robosailHeading = (360 - heading) + 90;
-  robosailHeading = clamp_angle(robosailHeading);
+  float robosailHeading = (360 - heading) + 90;
+  return clamp_angle(robosailHeading);
+}
+
+const int num_smooth_points = 15;
+float headings[num_smooth_points];
+int current_smooth_idx = 0;
+float getSmoothedRobosailHeading() {
+  headings[current_smooth_idx++] = getRobosailHeading();
+  current_smooth_idx %= num_smooth_points;
+  float smoothed_heading = 0.0;
+  for (int i=0; i<num_smooth_points; ++i) {
+    smoothed_heading += (headings[i]/num_smooth_points);
+  }
+  return smoothed_heading;
 }
 
 // Set up Compass and check that it is connected
-void checkCompass() {
+void initCompass() {
 #if COMPASS_ACCEL_EXISTS
   Serial.println("Setting up Compass");
   mag.enableAutoRange(true);
@@ -85,5 +101,8 @@ void checkCompass() {
     while(1);
   }
 #endif
+  for (int i=0; i<num_smooth_points; ++i) {
+    getSmoothedRobosailHeading();
+  }
 }
 

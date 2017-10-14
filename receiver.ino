@@ -1,6 +1,4 @@
-//input pins from receiver
-#define RUDDER_RC_PIN 2
-#define SAIL_RC_PIN 3
+#include "pins.h"
 
 #define RUDDER_HIGH 1900  //nominal 2000
 #define RUDDER_LOW 1130   //nominal 1000

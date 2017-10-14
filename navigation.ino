@@ -9,7 +9,7 @@ const bool approach_first_buoy_from_left = true;
 const int num_waypoints = 2*num_buoys + 3;
 const float target_clearance_radius = .0002; // Should be about 60 feet in latitude, 45 feet in longitude (in Boston). Good enough.
 const float waypoint_acquisition_clearance_squared = target_clearance_radius*target_clearance_radius/9.0;
-const float dock_lat = 42.360389;
+const float dock_lat = 52.360389;
 const float dock_lon = -71.073364;
 
 float waypoint_lats[num_waypoints];
