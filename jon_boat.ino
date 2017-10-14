@@ -50,8 +50,10 @@ UsefulCalcs calc(false);
 #endif
 
 //                        Near       Middle       Far
-float buoy_lats[3] = { 42.360601,  42.360763,  42.360925};
-float buoy_lons[3] = {-71.073761, -71.074089, -71.074417};
+float buoy_lats[3] = { 42.359195,  42.359228,  42.359261}; // Mooring field
+float buoy_lons[3] = {-71.073700, -71.073825, -71.073950};
+//float buoy_lats[3] = { 42.360601,  42.360763,  42.360925};  // Towards bridge
+//float buoy_lons[3] = {-71.073761, -71.074089, -71.074417};
 const int num_buoys = 3;
 bool approach_first_buoy_from_left = true;
 const int num_waypoints = 2*num_buoys + 3;
@@ -250,9 +252,9 @@ void set_rudder() {
     target_lat, target_lon);
   absolute_angle = rad2deg(absolute_angle);
 
-  desired_bearing = absolute_angle - robosailHeading;
+  desired_bearing = clamp_angle(absolute_angle - robosailHeading);
 
-  desired_bearing_relative_to_wind = desired_bearing - windAngle;
+  desired_bearing_relative_to_wind = clamp_angle(desired_bearing - windAngle);
   // TODO: what if in irons now?
   current_bearing_relative_to_wind = robosailHeading - windAngle;
   currently_in_irons = abs(current_bearing_relative_to_wind) <= IRONS_DEG;
@@ -264,6 +266,16 @@ void set_rudder() {
     desired_bearing_would_be_irons = false;
     rudderPosition = constrain(desired_bearing*rudder_multiplier, -60, 60);
   }
+}
+
+float clamp_angle(float angle) {
+  while (angle > 180.0) {
+    angle -= 360.0;
+  }
+  while (angle < -180.0) {
+    angle += 360.0;
+  }
+  return angle;
 }
 
 // Note: does not do great-circle distance, so not suitable for
