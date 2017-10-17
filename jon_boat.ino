@@ -8,20 +8,24 @@ Find detailed description in Decription tab
   #define WIND_SENSOR_EXISTS 1
   #define COMPASS_ACCEL_EXISTS 1
   #define SERVOS_EXIST 1
+  #define NEOPIXELS_EXIST 0
 #else
   #define GPS_EXISTS 0
   #define RECEIVER_EXISTS 0
   #define WIND_SENSOR_EXISTS 1
   #define COMPASS_ACCEL_EXISTS 1
   #define SERVOS_EXIST 0
+  #define NEOPIXELS_EXIST 1
+  #if SERVOS_EXIST
   #include <SoftwareSerial.h>
+  #endif
   // Arduino Nano pins:
   // 10DOF SDA=A4
   // 10DOF SCL=A5
 #endif
 
 const int IRONS_DEG = 45;
-const float rudder_multiplier = -.5; // -0.3333333;
+const float rudderMultiplier = 1; // 0.3333333;
 
 void setup() {
   Serial.begin(115200);
@@ -32,7 +36,8 @@ void setup() {
   digitalWrite(LED_BUILTIN, HIGH);
   initGPS();
   initCompass();
-  setup_waypoints();
+  setupWaypoints();
+  neopixelSetup();
   digitalWrite(LED_BUILTIN, LOW);
   Serial.println("Setup complete");
 }
@@ -49,65 +54,71 @@ void loop() {
 
   int windAngle = readWind();
   Serial.print("\tWind <: "); Serial.print(windAngle);
-  bool currently_in_irons = abs(windAngle) <= IRONS_DEG;
-  Serial.print("\tIrons now? "); Serial.print(currently_in_irons?"IRONS!":" safe ");
+  bool currentlyInIrons = abs(windAngle) <= IRONS_DEG;
+  Serial.print("\tIrons now? "); Serial.print(currentlyInIrons?"IRONS!":" safe ");
   // TODO: what if in irons now?
-  
+
+  int desiredBearing = 0;
   bool autosail;
   if (sailPct >= 90) { // Autopilot mode iff sail joystick is at/above 90% 
     autosail = true;
     Serial.print("\t*AUTO*");
-    rudderPosition = set_rudder(windAngle);
-    sailPosition = set_sail(windAngle);
+    rudderPosition = setRudder(windAngle, desiredBearing);
+    sailPosition = setSail(windAngle);
   } else {
     autosail = false;
     resetProgress();
     Serial.print("\tMANUAL");
   }
+
   /********************* send commands to motors *************************/
-#if SERVOS_EXIST
   driveSailServo(sailPosition);
   driveRudderServo(rudderPosition);
-#endif
+  display(windAngle, sailPosition, desiredBearing, rudderPosition);
 } //end of loop()
 
 int prevRudderPosition = 0;
-int set_rudder(int windAngle) {
+int setRudder(int windAngle, int& desiredBearing) {
   float robosailHeading = getSmoothedRobosailHeading();
 
   // Point at the target, unless that would put us in irons,
   // in which case go at a IRONS_DEG-degree angle toward-ish it
-  float absolute_angle = absolute_angle_to_target();
-  float desired_bearing = clamp_angle(absolute_angle - robosailHeading); // How much we want to turn (positive = port)
-  float desired_bearing_relative_to_wind = clamp_angle(desired_bearing - windAngle);
+  float absoluteAngle = absoluteAngleToTarget();
+  desiredBearing = clampAngle(absoluteAngle - robosailHeading); // How much we want to turn (positive = port)
+  float desiredBearingRelativeToWind = clampAngle(desiredBearing - windAngle);
 
-  bool desired_bearing_would_be_irons;
+  bool desiredBearingWouldBeIrons;
   int rudderPosition;
-  if (abs(desired_bearing_relative_to_wind) <= IRONS_DEG) {
-    desired_bearing_would_be_irons = true;
-    rudderPosition = (desired_bearing_relative_to_wind > 0 ? IRONS_DEG : -IRONS_DEG) * rudder_multiplier;
+  if (abs(desiredBearingRelativeToWind) <= IRONS_DEG) {
+    desiredBearingWouldBeIrons = true;
+    // TODO: Stabilize this so it doesn't jitter between 45 and -45 so often
+    if (abs(prevRudderPosition) == IRONS_DEG && abs(desiredBearingRelativeToWind) < 5) {
+      rudderPosition = prevRudderPosition;
+    } else {
+      rudderPosition = (desiredBearingRelativeToWind > 0 ? -IRONS_DEG : IRONS_DEG) * rudderMultiplier;
+    }
     rudderPosition = constrain(rudderPosition, -60, 60);
   } else {
-    desired_bearing_would_be_irons = false;
-    rudderPosition = constrain(desired_bearing*rudder_multiplier, -60, 60);
+    desiredBearingWouldBeIrons = false;
+    rudderPosition = constrain(desiredBearing*-1*rudderMultiplier, -60, 60);
   }
 
-  // If desired_bearing is within 5 degrees of +/-180, and previous rudderPosition was +/-60, don't flip the sign
-  if (abs(desired_bearing) >= 170 && abs(prevRudderPosition) == 60 && abs(rudderPosition) == 60) {
+  // If desiredBearing is within 5 degrees of +/-180, and previous rudderPosition was +/-60, don't flip the sign
+  if (abs(desiredBearing) >= 170 && abs(prevRudderPosition) == 60 && abs(rudderPosition) == 60) {
     rudderPosition = prevRudderPosition;
   }
 
   Serial.print("\tCur. RoboHeading: "); Serial.print(robosailHeading); Serial.print("  ");
-  Serial.print("\tAbs Heading to Tgt: "); Serial.print(absolute_angle); Serial.print("  ");
-  Serial.print("\tDes. Bearing: "); Serial.print(desired_bearing);
-  Serial.print("\tDes. Bearing->Wind: "); Serial.print(desired_bearing_relative_to_wind);
-  Serial.print("\tDes. Irons? "); Serial.print(desired_bearing_would_be_irons?"IRONS!":" safe ");
+  Serial.print("\tAbs Heading to Tgt: "); Serial.print(absoluteAngle); Serial.print("  ");
+  Serial.print("\tDes. Bearing: "); Serial.print(desiredBearing);
+  Serial.print(" \tDes. Bearing->Wind: "); Serial.print(desiredBearingRelativeToWind);
+  Serial.print("\tDes. Irons? "); Serial.print(desiredBearingWouldBeIrons?"IRONS!":" safe ");
   Serial.print("\tRudder Pos: "); Serial.println(rudderPosition);
   prevRudderPosition = rudderPosition;
   return rudderPosition;
 }
 
-int set_sail(int windAngle) {
+int setSail(int windAngle) {
   // abs(windAngle): IRONS_DEG...180 -> abs(sail) 0...90
   return map(constrain(abs(windAngle), IRONS_DEG, 180), IRONS_DEG, 180, 0, 90);
   // TODO Pull it in a little and then let it out when gybing

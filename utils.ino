@@ -2,7 +2,7 @@ float rad2deg(float rad) {
   return rad * 57296 / 1000;
 }
 
-float clamp_angle(float angle) {
+float clampAngle(float angle) {
   while (angle > 180.0) {
     angle -= 360.0;
   }

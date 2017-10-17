@@ -1,13 +1,3 @@
-#if SERVOS_EXIST
-#include <Servo.h>
-#endif
-
-#if SERVOS_EXIST
-//create servo objects
-Servo rudderServo;
-Servo sailServo;
-#endif
-
 /************Functions to drive Sail and Rudder servos ****************/
  // This code takes in the desired postions for the servos in degrees (as 
  // defined in RoboSail) then calculates appropriate values for the servo commands, 

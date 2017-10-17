@@ -66,7 +66,7 @@ float readCompassAccel() {
   //float robosailRoll  = -1 * roll;
 
   float heading = yaw + declination;
-  return clamp_angle(heading);
+  return clampAngle(heading);
 #endif
 }
 
@@ -75,7 +75,7 @@ float getRobosailHeading() {
   // The heading is converted to a frame of reference for RoboSail:
   // East is 0 degrees, North is 90 deg, West is 180 deg, South is 270 deg. 
   float robosailHeading = (360 - heading) + 90;
-  return clamp_angle(robosailHeading);
+  return clampAngle(robosailHeading);
 }
 
 const int num_smooth_points = 15;

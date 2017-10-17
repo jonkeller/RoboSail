@@ -16,7 +16,7 @@ float waypoint_lats[num_waypoints];
 float waypoint_lons[num_waypoints];
 int next_waypoint = 0;
 
-void setup_waypoints() {
+void setupWaypoints() {
   // Find bearing between buoy 0 and buoy 1
   float buoy_direction = find_absolute_angle(buoy_lats[0], buoy_lons[0], buoy_lats[1], buoy_lons[1]);
   Serial.print("Bearing from buoy 0 to buoy 1: "); Serial.println(buoy_direction, 6);
@@ -75,7 +75,7 @@ void choose_target(float& target_lat, float& target_lon) {
   }
 }
 
-float absolute_angle_to_target() {
+float absoluteAngleToTarget() {
   float angle;
   float target_lat;
   float target_lon;
