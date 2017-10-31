@@ -5,6 +5,7 @@ Requirements:
 * Arduino nano ($20)
 * Small perfboard [$5 for 10](https://www.adafruit.com/product/2670)
 * Misc wire, headers, etc.
+* Something to make the sail out of, string to rig it.
 
 TODO:
 * Design mast
