@@ -8,14 +8,8 @@ Requirements:
 * Something to make the sail out of, string to rig it.
 
 TODO:
-* Design mast
-* Design rudder
 * Create Fritzing file for electronics
-* Make room for connector wires for servos, battery pack
-* Make battery holder space about 2mm longer
 * Design keel
 * Make corners rounder
-* Improve stability of perfboard holder pegs
-* Improve stability of rudder mount
-* Compartmentalize empty space?
+* Compartmentalize empty space more?
 * Add photos
