@@ -8,8 +8,10 @@ Requirements:
 * Something to make the sail out of, string to rig it.
 
 TODO:
-* Create Fritzing file for electronics
+* Design rudder
 * Design keel
 * Make corners rounder
+* Design lid
 * Compartmentalize empty space more?
+* Create Fritzing file for electronics
 * Add photos

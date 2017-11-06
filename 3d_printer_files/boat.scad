@@ -4,10 +4,11 @@ BOAT_DEPTH = 32;
 HULL_THICKNESS = 1;
 
 BATTERY_SIZE_PADDING = 2;
-BATTERY_INNER_WIDTH = 30 + BATTERY_SIZE_PADDING;
+BATTERY_INNER_WIDTH = 32 + BATTERY_SIZE_PADDING;
 BATTERY_INNER_LENGTH = 59 + BATTERY_SIZE_PADDING;
 BATTERY_INNER_HEIGHT = 28 + BATTERY_SIZE_PADDING;
 BATTERY_BOX_THICKNESS = 1;
+BATTERY_FORWARD_TRANSLATE = 36;
 
 SERVO_SIZE_PADDING = 2;
 SERVO_INNER_WIDTH = 11.8 + SERVO_SIZE_PADDING;
@@ -16,9 +17,16 @@ SERVO_INNER_HEIGHT = 15.9 + SERVO_SIZE_PADDING;
 SERVO_BOX_THICKNESS = 1;
 
 MAST_DIAMETER = 4;
+MAST_PADDING = 0.5;
 MAST_MOUNT_THICKNESS = 1;
-MAST_MOUNT_DIAMETER = MAST_DIAMETER + 2*MAST_MOUNT_THICKNESS;
+MAST_MOUNT_INNER_DIAMETER = MAST_DIAMETER + 2*(MAST_PADDING);
 MAST_HEIGHT = 150;
+MAST_FORWARD_TRANSLATE = BATTERY_FORWARD_TRANSLATE + BATTERY_INNER_LENGTH/2 + BATTERY_BOX_THICKNESS/2 + MAST_MOUNT_INNER_DIAMETER/2;
+
+MSR_RAIL_WIDTH = MAST_MOUNT_INNER_DIAMETER*1;
+MSR_RAIL_LENGTH = 13;
+MSR_RAIL_HEIGHT = 10;
+
 BOOM_LENGTH = BOAT_LENGTH*.75;
 RING_OUTER_RADIUS = 3;
 RING_INNER_RADIUS = 2;
@@ -29,7 +37,7 @@ RAIL_HEIGHT = BOAT_DEPTH;
 
 RUDDER_MOUNT_WIDTH = 8;
 RUDDER_MOUNT_LENGTH = 8;
-RUDDER_MOUNT_RAIL_HEIGHT = 8;
+RUDDER_MOUNT_RAIL_HEIGHT = BOAT_DEPTH;
 
 boat();
 mast();
@@ -131,7 +139,7 @@ module hull() {
 
 module batteryBox() {
   color("red") {
-    translate([0, 32, HULL_THICKNESS]) {
+    translate([0, BATTERY_FORWARD_TRANSLATE, HULL_THICKNESS]) {
       openTopBox(BATTERY_INNER_WIDTH+BATTERY_BOX_THICKNESS, BATTERY_INNER_LENGTH+BATTERY_BOX_THICKNESS, BATTERY_INNER_HEIGHT+BATTERY_BOX_THICKNESS, BATTERY_BOX_THICKNESS);
     }
   }
@@ -145,8 +153,8 @@ module servoBox() {
         openTopBox(SERVO_INNER_WIDTH+SERVO_BOX_THICKNESS,
                    SERVO_INNER_LENGTH+SERVO_BOX_THICKNESS,
                    servoOuterHeight, SERVO_BOX_THICKNESS);
-        translate([-4.25, SERVO_INNER_LENGTH/2 - 1, SERVO_BOX_THICKNESS+4.5]) {
-          cube([8.5, 3, 1.5]);
+        translate([-4.25, SERVO_INNER_LENGTH/2 - 1, SERVO_BOX_THICKNESS+3.75]) {
+          cube([8.5, 3, 3]);
         }
       }
     }
@@ -157,7 +165,7 @@ module servoBox() {
 }
 
 module sailServo() {
-  translate([5.9, -6.4, 0]) {
+  translate([5.9, -2.4, 0]) {
     rotate([0, 0, 90]) {
       servoBox();
     }
@@ -166,9 +174,7 @@ module sailServo() {
 
 module rudderServo() {
   translate([0, -35, 0]) {
-    rotate([0, 0, 180]) {
-      servoBox();
-    }
+    servoBox();
   }
 }
 
@@ -187,9 +193,9 @@ module rudderMount() {
 }
 
 module mastMount() {
-  translate([0, BOAT_LENGTH*7/16 +.3, 0]) {
+  translate([0, MAST_FORWARD_TRANSLATE, 0]) {
     color("orange") {
-      openTopBox(MAST_MOUNT_DIAMETER, MAST_MOUNT_DIAMETER, BOAT_DEPTH, MAST_MOUNT_THICKNESS);
+      openTopBox(MAST_MOUNT_INNER_DIAMETER, MAST_MOUNT_INNER_DIAMETER, BOAT_DEPTH, MAST_MOUNT_THICKNESS);
     }
   }
 }
@@ -222,7 +228,9 @@ module boom() {
   color("orange") {
     translate([BOAT_WIDTH*.75, -BOOM_LENGTH/2, 0]) {
       cube([MAST_DIAMETER, BOOM_LENGTH, MAST_DIAMETER]);
-      ring(1);
+      translate([2,0,0]) {
+        ring(-3);
+      }
       ring(22.3);
       ring(43.6);
       ring(64.9);
@@ -234,12 +242,22 @@ module boom() {
 
 
 module mainSheetRing() {
-  translate([0, -19.3, 0]) {
+  translate([0, -15.3, 0]) {
     color("orange") {
+      translate([0, 0, BOAT_DEPTH]) {
+        difference() {
+          openTopBox(MAST_MOUNT_INNER_DIAMETER, MAST_MOUNT_INNER_DIAMETER, 16, MAST_MOUNT_THICKNESS);
+          translate([0, MAST_MOUNT_INNER_DIAMETER/2, 12]) {
+            sphere(MAST_MOUNT_INNER_DIAMETER/3, $fn=20);
+          }
+        }
+      }
       difference() {
-        openTopBox(MAST_MOUNT_DIAMETER, MAST_MOUNT_DIAMETER, BOAT_DEPTH+16, MAST_MOUNT_THICKNESS);
-        translate([0, MAST_MOUNT_DIAMETER/2, BOAT_DEPTH+12]) {
-          sphere(MAST_MOUNT_DIAMETER/3, $fn=20);
+        translate([-MSR_RAIL_WIDTH/2, -MSR_RAIL_LENGTH/2-.5, BOAT_DEPTH-MSR_RAIL_HEIGHT]) {
+          cube([MSR_RAIL_WIDTH, MSR_RAIL_LENGTH, MSR_RAIL_HEIGHT]);
+        }
+        translate([0, -.75, BOAT_DEPTH-MSR_RAIL_HEIGHT]) {
+          sphere(MSR_RAIL_LENGTH/2, $fn=40);
         }
       }
     }
