@@ -44,9 +44,9 @@ RUDDER_PIVOT_HOLE_DIAMETER = 3;
 boat();
 mast();
 boom();
-//translate([-50, 0, 0]) {
+translate([-50, 50, 0]) {
   rudder();
-//}
+}
 
 module boat() {
   hull();
