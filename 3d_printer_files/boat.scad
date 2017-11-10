@@ -15,6 +15,7 @@ SERVO_INNER_WIDTH = 11.8 + SERVO_SIZE_PADDING;
 SERVO_INNER_LENGTH = 22.5 + SERVO_SIZE_PADDING;
 SERVO_INNER_HEIGHT = 15.9 + SERVO_SIZE_PADDING;
 SERVO_BOX_THICKNESS = 1;
+SERVO_CONNECTOR_WIDTH = 8.5;
 
 MAST_DIAMETER = 4;
 MAST_PADDING = 0.5;
@@ -36,15 +37,19 @@ RAIL_LENGTH = 40;
 RAIL_HEIGHT = BOAT_DEPTH;
 
 RUDDER_MOUNT_WIDTH = 8;
-RUDDER_MOUNT_LENGTH = 8;
+RUDDER_MOUNT_LENGTH = 20;
 RUDDER_MOUNT_RAIL_HEIGHT = BOAT_DEPTH;
 
 boat();
 mast();
 boom();
+translate([-50, 0, 0]) {
+  rudder();
+}
 
 module boat() {
   hull();
+//  keel();
   batteryBox();
   sailServo();
   rudderServo();
@@ -137,6 +142,66 @@ module hull() {
   );
 }
 
+module keel() {
+  aftLength = BOAT_LENGTH * .75;
+  foreLength = BOAT_LENGTH - aftLength;
+  polyhedron(
+    points = [
+      // Underside
+      [0, aftLength/2 + foreLength, 0],
+      [-BOAT_WIDTH/2, aftLength/2, 0],
+      [-BOAT_WIDTH/2, -aftLength/2, 0],
+      [BOAT_WIDTH/2, -aftLength/2, 0],
+      [BOAT_WIDTH/2, aftLength/2, 0],
+
+      [-BOAT_WIDTH*.25, aftLength*.55, -BOAT_DEPTH*.25], // 5
+      [-BOAT_WIDTH*.25, -aftLength*.3, -BOAT_DEPTH*.25],
+      [BOAT_WIDTH*.25, -aftLength*.3, -BOAT_DEPTH*.25],
+      [BOAT_WIDTH*.25, aftLength*.55, -BOAT_DEPTH*.25],
+
+      [-BOAT_WIDTH*.1, aftLength*.35, -BOAT_DEPTH*.67], // 9
+      [-BOAT_WIDTH*.1, -aftLength*.15, -BOAT_DEPTH*.67],
+      [BOAT_WIDTH*.1, -aftLength*.15, -BOAT_DEPTH*.67],
+      [BOAT_WIDTH*.1, aftLength*.35, -BOAT_DEPTH*.67],
+
+      [0, -aftLength*.1, -BOAT_DEPTH*1.2], // 13
+      [0, aftLength*.3, -BOAT_DEPTH*1.2],
+    ],
+    triangles = [
+      // Underside
+      [3, 2, 1],
+      [3, 1, 4],
+      [1, 0, 4],
+
+      [0, 1, 5],
+      [1, 2, 5],
+      [5, 2, 6],
+      [2, 3, 6],
+      [6, 3, 7],
+      [3, 4, 7],
+      [7, 4, 8],
+      [4, 0, 8],
+      [8, 0, 5],
+
+      [5, 6, 9],
+      [9, 6, 10],
+      [6, 7, 10],
+      [10, 7, 11],
+      [7, 8, 11],
+      [11, 8, 12],
+      [8, 5, 12],
+      [12, 5, 9],
+
+      [9, 10, 13],
+      [9, 13, 14],
+      [10, 11, 13],
+      [11, 12, 13],
+      [13, 12, 14],
+      [9, 14, 12],
+    ]
+  );
+}
+
 module batteryBox() {
   color("red") {
     translate([0, BATTERY_FORWARD_TRANSLATE, HULL_THICKNESS]) {
@@ -145,19 +210,54 @@ module batteryBox() {
   }
 }
 
+
 module servoBox() {
   servoOuterHeight = SERVO_INNER_HEIGHT + SERVO_BOX_THICKNESS;
   color("blue") {
     translate([0, 0, BOAT_DEPTH-SERVO_INNER_HEIGHT-HULL_THICKNESS]) {
       difference() {
-        openTopBox(SERVO_INNER_WIDTH+SERVO_BOX_THICKNESS,
-                   SERVO_INNER_LENGTH+SERVO_BOX_THICKNESS,
-                   servoOuterHeight, SERVO_BOX_THICKNESS);
-        translate([-4.25, SERVO_INNER_LENGTH/2 - 1, SERVO_BOX_THICKNESS+3.75]) {
-          cube([8.5, 3, 3]);
+        union() {
+          openTopBox(SERVO_INNER_WIDTH+SERVO_BOX_THICKNESS,
+                     SERVO_INNER_LENGTH+SERVO_BOX_THICKNESS,
+                     servoOuterHeight, SERVO_BOX_THICKNESS);
+          // Wire-side mount
+          translate([(SERVO_INNER_WIDTH+SERVO_BOX_THICKNESS)/-2,
+                     (SERVO_INNER_LENGTH+SERVO_BOX_THICKNESS)*.5,
+                     servoOuterHeight-8]) {
+            cube([SERVO_INNER_WIDTH+SERVO_BOX_THICKNESS, 4.7, 8]);
+          }
+        }
+        // Wire hole
+        translate([SERVO_CONNECTOR_WIDTH*-.5,
+                   SERVO_INNER_LENGTH/2 - 1,
+                   SERVO_BOX_THICKNESS+3.75]) {
+          cube([SERVO_CONNECTOR_WIDTH, 3, 3]);
+        }
+      // Wire channel cutout
+      translate([0, 14.1, 7.75]) {
+        rotate([0, 0, 180]) {
+          openTopBox(SERVO_CONNECTOR_WIDTH/2,
+                     4.7,
+                     SERVO_INNER_HEIGHT-6.75, SERVO_BOX_THICKNESS, true, false);
+        }
+      }
+      }
+      // Non-wire-side mount
+      translate([(SERVO_INNER_WIDTH+SERVO_BOX_THICKNESS)/-2,
+                 (SERVO_INNER_LENGTH+SERVO_BOX_THICKNESS)*-.5 - 4.7,
+                 servoOuterHeight-8]) {
+        cube([SERVO_INNER_WIDTH+SERVO_BOX_THICKNESS, 4.7, 8]);
+      }
+      // Wire channel
+      translate([0, 14.1, 7.75]) {
+        rotate([0, 0, 180]) {
+          openTopBox(SERVO_CONNECTOR_WIDTH/2,
+                     4.7,
+                     SERVO_INNER_HEIGHT-6.75, SERVO_BOX_THICKNESS, false, false);
         }
       }
     }
+    // Stand
     translate([0, 0, (HULL_THICKNESS+BOAT_DEPTH-servoOuterHeight)/2]) {
       cube([SERVO_INNER_WIDTH+SERVO_BOX_THICKNESS, SERVO_INNER_LENGTH+SERVO_BOX_THICKNESS, BOAT_DEPTH-servoOuterHeight-HULL_THICKNESS], true);
     }
@@ -173,20 +273,43 @@ module sailServo() {
 }
 
 module rudderServo() {
-  translate([0, -35, 0]) {
+  translate([0, -38.5, 0]) {
     servoBox();
   }
 }
 
 module rudderMount() {
   color("orange") {
-    translate([0, -51, 0]) {
-      //peg();
-      translate([-RUDDER_MOUNT_WIDTH/2, -4.4, BOAT_DEPTH-RUDDER_MOUNT_RAIL_HEIGHT]) {
-        cube([RUDDER_MOUNT_WIDTH, RUDDER_MOUNT_LENGTH, RUDDER_MOUNT_RAIL_HEIGHT]);
+    translate([0, -59, 0]) {
+      translate([-RUDDER_MOUNT_WIDTH/2,
+                 4-RUDDER_MOUNT_LENGTH,
+                 BOAT_DEPTH-RUDDER_MOUNT_RAIL_HEIGHT]) {
+        difference() {
+          cube([RUDDER_MOUNT_WIDTH,
+                RUDDER_MOUNT_LENGTH,
+                RUDDER_MOUNT_RAIL_HEIGHT]);
+          translate([0, -20, -32]) {
+            rotate([35, 0, 0]) {
+              cube([50, 50, 50]);
+            }
+          }
+          translate([4, 13, BOAT_DEPTH*.5]) {
+            cylinder($fn=20, BOAT_DEPTH*.5, 3, 3);
+          }
+        }
       }
-      translate([0, -2, BOAT_DEPTH]) {
-        cylinder($fn=20, 4, 2, 2);
+    }
+  }
+}
+
+module rudder() {
+  color("green") {
+    translate([4-RUDDER_MOUNT_WIDTH/2,
+               -RUDDER_MOUNT_LENGTH-42,
+               BOAT_DEPTH*1.75-RUDDER_MOUNT_RAIL_HEIGHT]) {
+      cylinder($fn=20, BOAT_DEPTH*.5, 2.5, 2.5);
+      translate([-BOAT_WIDTH/4, -24.2, BOAT_DEPTH*.25]) {
+        cube([BOAT_WIDTH/2, RUDDER_MOUNT_LENGTH*1.5, BOAT_DEPTH*.25]);
       }
     }
   }
@@ -350,3 +473,4 @@ module wall(w, h, r=0.0, thickness=1.0) {
   );
   }
 }
+

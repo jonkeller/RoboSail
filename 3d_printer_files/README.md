@@ -8,8 +8,7 @@ Requirements:
 * Something to make the sail out of, string to rig it.
 
 TODO:
-* Design rudder
-* Design keel
+* Finish designing rudder
 * Make corners rounder
 * Design lid
 * Compartmentalize empty space more?
