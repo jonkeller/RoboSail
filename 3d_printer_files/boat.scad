@@ -38,14 +38,15 @@ RAIL_HEIGHT = BOAT_DEPTH;
 
 RUDDER_MOUNT_WIDTH = 8;
 RUDDER_MOUNT_LENGTH = 20;
-RUDDER_MOUNT_RAIL_HEIGHT = BOAT_DEPTH;
+RUDDER_PIVOT_DIAMETER = 2.5;
+RUDDER_PIVOT_HOLE_DIAMETER = 3;
 
 boat();
 mast();
 boom();
-translate([-50, 0, 0]) {
+//translate([-50, 0, 0]) {
   rudder();
-}
+//}
 
 module boat() {
   hull();
@@ -283,18 +284,19 @@ module rudderMount() {
     translate([0, -59, 0]) {
       translate([-RUDDER_MOUNT_WIDTH/2,
                  4-RUDDER_MOUNT_LENGTH,
-                 BOAT_DEPTH-RUDDER_MOUNT_RAIL_HEIGHT]) {
+                 0]) {
         difference() {
           cube([RUDDER_MOUNT_WIDTH,
                 RUDDER_MOUNT_LENGTH,
-                RUDDER_MOUNT_RAIL_HEIGHT]);
+                BOAT_DEPTH]);
           translate([0, -20, -32]) {
             rotate([35, 0, 0]) {
               cube([50, 50, 50]);
             }
           }
-          translate([4, 13, BOAT_DEPTH*.5]) {
-            cylinder($fn=20, BOAT_DEPTH*.5, 3, 3);
+          translate([RUDDER_MOUNT_WIDTH/2, 13, BOAT_DEPTH*.5]) {
+            cylinder($fn=20, BOAT_DEPTH*.5,
+                     RUDDER_PIVOT_HOLE_DIAMETER, RUDDER_PIVOT_HOLE_DIAMETER);
           }
         }
       }
@@ -304,12 +306,29 @@ module rudderMount() {
 
 module rudder() {
   color("green") {
-    translate([4-RUDDER_MOUNT_WIDTH/2,
+    translate([0,
                -RUDDER_MOUNT_LENGTH-42,
-               BOAT_DEPTH*1.75-RUDDER_MOUNT_RAIL_HEIGHT]) {
-      cylinder($fn=20, BOAT_DEPTH*.5, 2.5, 2.5);
+               BOAT_DEPTH*.75]) {
+      translate([0, 0, -9]) {
+        cylinder($fn=20, BOAT_DEPTH*.8,
+                 RUDDER_PIVOT_DIAMETER, RUDDER_PIVOT_DIAMETER);
+      }
+      // Servo wire mount
+      translate([BOAT_WIDTH/-4, -RUDDER_PIVOT_DIAMETER, 10]) {
+        cube([BOAT_WIDTH/2, 5, 10]);
+      }
+      // Biggest part
       translate([-BOAT_WIDTH/4, -24.2, BOAT_DEPTH*.25]) {
         cube([BOAT_WIDTH/2, RUDDER_MOUNT_LENGTH*1.5, BOAT_DEPTH*.25]);
+      }
+      // Part that goes down
+      translate([RUDDER_MOUNT_WIDTH/-2, -24.2, -BOAT_DEPTH*.5]) {
+        cube([RUDDER_MOUNT_WIDTH, 10, BOAT_DEPTH]);
+      }
+      translate([RUDDER_MOUNT_WIDTH/-2, -8, -40]) {
+        rotate([35, 0, 0]) {
+          cube([RUDDER_MOUNT_WIDTH, 18, 40]);
+        }
       }
     }
   }
