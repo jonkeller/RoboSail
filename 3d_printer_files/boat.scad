@@ -1,3 +1,12 @@
+// TODO:
+// Widen the spot for protoboard. Switch to 2 pegs, w/ proper diameter. Tray?
+// Measure servo horns, ensure enough room for them
+// Make mast/boom holes smaller?
+// 3 (4?) levels: keel, electronics, deck
+// In Blender:
+// Rework rudder fin, center of gravity
+// Narrow the back of the boat
+
 BOAT_WIDTH = 50;
 BOAT_LENGTH = 150;
 BOAT_DEPTH = 32;
@@ -15,7 +24,7 @@ SERVO_INNER_WIDTH = 11.8 + SERVO_SIZE_PADDING;
 SERVO_INNER_LENGTH = 22.5 + SERVO_SIZE_PADDING;
 SERVO_INNER_HEIGHT = 15.9 + SERVO_SIZE_PADDING;
 SERVO_BOX_THICKNESS = 1;
-SERVO_CONNECTOR_WIDTH = 8.5;
+SERVO_CONNECTOR_WIDTH = 9.5;
 
 MAST_DIAMETER = 4;
 MAST_PADDING = 0.5;
@@ -25,7 +34,7 @@ MAST_HEIGHT = 150;
 MAST_FORWARD_TRANSLATE = BATTERY_FORWARD_TRANSLATE + BATTERY_INNER_LENGTH/2 + BATTERY_BOX_THICKNESS/2 + MAST_MOUNT_INNER_DIAMETER/2;
 
 MSR_RAIL_WIDTH = MAST_MOUNT_INNER_DIAMETER*1;
-MSR_RAIL_LENGTH = 13;
+MSR_RAIL_LENGTH = 14;
 MSR_RAIL_HEIGHT = 10;
 
 BOOM_LENGTH = BOAT_LENGTH*.75;
@@ -38,14 +47,27 @@ RAIL_HEIGHT = BOAT_DEPTH;
 
 RUDDER_MOUNT_WIDTH = 8;
 RUDDER_MOUNT_LENGTH = 20;
-RUDDER_PIVOT_DIAMETER = 2.5;
-RUDDER_PIVOT_HOLE_DIAMETER = 3;
+RUDDER_WIDTH = RUDDER_MOUNT_WIDTH - 2;
+RUDDER_PIVOT_DIAMETER = RUDDER_WIDTH/2;
+RUDDER_PIVOT_HOLE_DIAMETER = RUDDER_MOUNT_WIDTH/2 - 1;
 
+CIRCUIT_BOARD_TRAY_THICKNESS = 1;
+CIRCUIT_BOARD_WIDTH = 84 + CIRCUIT_BOARD_TRAY_THICKNESS; // measured 81.21
+CIRCUIT_BOARD_LENGTH = 53 + CIRCUIT_BOARD_TRAY_THICKNESS; // measured 50.73
+CIRCUIT_BOARD_DEPTH = 5 + CIRCUIT_BOARD_TRAY_THICKNESS; // depth of tray, not board
+CIRCUIT_BOARD_HOLE_DIAMETER = 2.75; // measured 3.2
+
+//all();
 boat();
-mast();
-boom();
-translate([-50, 50, 0]) {
-  rudder();
+module all() {
+  boat();
+  mast();
+  boom();
+  translate([-130, 0, 5]) {
+    rotate([0, 90, 90]) {
+      rudder();
+    }
+  }
 }
 
 module boat() {
@@ -57,7 +79,8 @@ module boat() {
   rudderMount();
   mastMount();
   mainSheetRing();
-  pegs();
+  //pegs();
+  //circuitBoardTray();
 }
 
 module hull() {
@@ -211,7 +234,6 @@ module batteryBox() {
   }
 }
 
-
 module servoBox() {
   servoOuterHeight = SERVO_INNER_HEIGHT + SERVO_BOX_THICKNESS;
   color("blue") {
@@ -222,39 +244,29 @@ module servoBox() {
                      SERVO_INNER_LENGTH+SERVO_BOX_THICKNESS,
                      servoOuterHeight, SERVO_BOX_THICKNESS);
           // Wire-side mount
-          translate([(SERVO_INNER_WIDTH+SERVO_BOX_THICKNESS)/-2,
-                     (SERVO_INNER_LENGTH+SERVO_BOX_THICKNESS)*.5,
-                     servoOuterHeight-8]) {
-            cube([SERVO_INNER_WIDTH+SERVO_BOX_THICKNESS, 4.7, 8]);
+          translate([0,15,14.9]) {
+            rotate([0,90,90]) {
+              prism(8, SERVO_INNER_WIDTH+SERVO_BOX_THICKNESS, 4.7);
+            }
           }
-        }
-        // Wire hole
+        } //union
+        // Connector hole
         translate([SERVO_CONNECTOR_WIDTH*-.5,
                    SERVO_INNER_LENGTH/2 - 1,
-                   SERVO_BOX_THICKNESS+3.75]) {
-          cube([SERVO_CONNECTOR_WIDTH, 3, 3]);
+                   SERVO_BOX_THICKNESS+4.75]) {
+          cube([SERVO_CONNECTOR_WIDTH, 3, 4]);
         }
-      // Wire channel cutout
-      translate([0, 14.1, 7.75]) {
-        rotate([0, 0, 180]) {
-          openTopBox(SERVO_CONNECTOR_WIDTH/2,
-                     4.7,
-                     SERVO_INNER_HEIGHT-6.75, SERVO_BOX_THICKNESS, true, false);
+        // Wire channel cutout
+        translate([SERVO_CONNECTOR_WIDTH*-.5, 10, 8]) {
+          cube([SERVO_CONNECTOR_WIDTH,
+                4.7,
+                SERVO_INNER_HEIGHT-6.75], false);
         }
-      }
-      }
+      } //difference
       // Non-wire-side mount
-      translate([(SERVO_INNER_WIDTH+SERVO_BOX_THICKNESS)/-2,
-                 (SERVO_INNER_LENGTH+SERVO_BOX_THICKNESS)*-.5 - 4.7,
-                 servoOuterHeight-8]) {
-        cube([SERVO_INNER_WIDTH+SERVO_BOX_THICKNESS, 4.7, 8]);
-      }
-      // Wire channel
-      translate([0, 14.1, 7.75]) {
-        rotate([0, 0, 180]) {
-          openTopBox(SERVO_CONNECTOR_WIDTH/2,
-                     4.7,
-                     SERVO_INNER_HEIGHT-6.75, SERVO_BOX_THICKNESS, false, false);
+      translate([0,-15,14.9]) {
+        rotate([0,90,-90]) {
+          prism(8, SERVO_INNER_WIDTH+SERVO_BOX_THICKNESS, 4.7);
         }
       }
     }
@@ -294,7 +306,7 @@ module rudderMount() {
               cube([50, 50, 50]);
             }
           }
-          translate([RUDDER_MOUNT_WIDTH/2, 13, BOAT_DEPTH*.5]) {
+          translate([RUDDER_MOUNT_WIDTH/2, 7, BOAT_DEPTH*.7]) {
             cylinder($fn=20, BOAT_DEPTH*.5,
                      RUDDER_PIVOT_HOLE_DIAMETER, RUDDER_PIVOT_HOLE_DIAMETER);
           }
@@ -309,25 +321,25 @@ module rudder() {
     translate([0,
                -RUDDER_MOUNT_LENGTH-42,
                BOAT_DEPTH*.75]) {
-      translate([0, 0, -9]) {
-        cylinder($fn=20, BOAT_DEPTH*.8,
+      translate([0, -6, -2]) {
+        cylinder($fn=20, BOAT_DEPTH*.4,
                  RUDDER_PIVOT_DIAMETER, RUDDER_PIVOT_DIAMETER);
       }
       // Servo wire mount
-      translate([BOAT_WIDTH/-4, -RUDDER_PIVOT_DIAMETER, 10]) {
-        cube([BOAT_WIDTH/2, 5, 10]);
+      translate([RUDDER_WIDTH/-2, -RUDDER_PIVOT_DIAMETER-6, 10]) {
+        cube([RUDDER_WIDTH, 14.8, 10]);
       }
       // Biggest part
-      translate([-BOAT_WIDTH/4, -24.2, BOAT_DEPTH*.25]) {
-        cube([BOAT_WIDTH/2, RUDDER_MOUNT_LENGTH*1.5, BOAT_DEPTH*.25]);
+      translate([-RUDDER_WIDTH/2, -24.2, BOAT_DEPTH*.25]) {
+        cube([RUDDER_WIDTH, RUDDER_MOUNT_LENGTH*1.5, BOAT_DEPTH*.25]);
       }
       // Part that goes down
-      translate([RUDDER_MOUNT_WIDTH/-2, -24.2, -BOAT_DEPTH*.5]) {
-        cube([RUDDER_MOUNT_WIDTH, 10, BOAT_DEPTH]);
+      translate([RUDDER_WIDTH/-2, -24.2, -BOAT_DEPTH*.5]) {
+        cube([RUDDER_WIDTH, 10, BOAT_DEPTH]);
       }
-      translate([RUDDER_MOUNT_WIDTH/-2, -8, -40]) {
+      translate([RUDDER_WIDTH/-2, -8, -40]) {
         rotate([35, 0, 0]) {
-          cube([RUDDER_MOUNT_WIDTH, 18, 40]);
+          cube([RUDDER_WIDTH, 18, 40]);
         }
       }
     }
@@ -382,27 +394,40 @@ module boom() {
   }
 }
 
-
 module mainSheetRing() {
-  translate([0, -15.3, 0]) {
+  translate([0, -15.3, 7.5]) {
     color("orange") {
-      translate([0, 0, BOAT_DEPTH]) {
+      translate([0, 0, BOAT_DEPTH-.5]) {
         difference() {
-          openTopBox(MAST_MOUNT_INNER_DIAMETER, MAST_MOUNT_INNER_DIAMETER, 16, MAST_MOUNT_THICKNESS);
-          translate([0, MAST_MOUNT_INNER_DIAMETER/2, 12]) {
+          openTopBox(MAST_MOUNT_INNER_DIAMETER, MAST_MOUNT_INNER_DIAMETER, 9.5, MAST_MOUNT_THICKNESS);
+          translate([0, MAST_MOUNT_INNER_DIAMETER/2, 4.5]) {
             sphere(MAST_MOUNT_INNER_DIAMETER/3, $fn=20);
           }
         }
       }
-      difference() {
-        translate([-MSR_RAIL_WIDTH/2, -MSR_RAIL_LENGTH/2-.5, BOAT_DEPTH-MSR_RAIL_HEIGHT]) {
-          cube([MSR_RAIL_WIDTH, MSR_RAIL_LENGTH, MSR_RAIL_HEIGHT]);
-        }
-        translate([0, -.75, BOAT_DEPTH-MSR_RAIL_HEIGHT]) {
-          sphere(MSR_RAIL_LENGTH/2, $fn=40);
+
+      translate([0, 1.5, BOAT_DEPTH-11.45]) {
+        rotate([0, 180, 90]) {
+          prism(8.0/*MSR_RAIL_LENGTH*/,
+                MSR_RAIL_WIDTH,
+                22);
         }
       }
     }
+  }
+}
+
+module circuitBoardTray() {
+  translate([0, 44, BOAT_DEPTH]) {
+    //rotate([0,0,90]) {
+    openTopBox(CIRCUIT_BOARD_WIDTH, CIRCUIT_BOARD_LENGTH, CIRCUIT_BOARD_DEPTH, 1);
+    translate([37.15, 0, 0]) {
+      cylinder($fn=20, h=CIRCUIT_BOARD_DEPTH, d=CIRCUIT_BOARD_HOLE_DIAMETER);
+    }
+    translate([-37.15, 0, 0]) {
+      cylinder($fn=20, h=CIRCUIT_BOARD_DEPTH, d=CIRCUIT_BOARD_HOLE_DIAMETER);
+    }
+    //}
   }
 }
 
@@ -492,4 +517,28 @@ module wall(w, h, r=0.0, thickness=1.0) {
   );
   }
 }
+
+module prism(w, l, h) {
+  polyhedron(
+    points = [
+      [w/2, l/2, -h/2],
+      [w/2, -l/2, -h/2],
+      [-w/2, l/2, h/2],
+      [-w/2, l/2, -h/2],
+      [-w/2, -l/2, h/2],
+      [-w/2, -l/2, -h/2],
+    ],
+    triangles = [
+      [1, 5, 4],
+      [0, 2, 3],
+      [2, 4, 5],
+      [2, 5, 3],
+      [0, 3, 5],
+      [0, 5, 1],
+      [1, 4, 2],
+      [1, 2, 0],
+    ]
+  );
+}
+
 
