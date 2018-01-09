@@ -14,8 +14,8 @@ Find detailed description in Decription tab
   #define RECEIVER_EXISTS 0
   #define WIND_SENSOR_EXISTS 1
   #define COMPASS_ACCEL_EXISTS 1
-  #define SERVOS_EXIST 0
-  #define NEOPIXELS_EXIST 1
+  #define SERVOS_EXIST 1
+  #define NEOPIXELS_EXIST 0
   #if SERVOS_EXIST
   #include <SoftwareSerial.h>
   #endif

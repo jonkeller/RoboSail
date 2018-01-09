@@ -48,7 +48,9 @@ void display(int windAngle, int sailPosition, int desiredBearing, int rudderPosi
 }
 
 int toLedIndex(int angle) {
-  int led = (float)clampAngle(-angle) + 180.0;
+  int led = 0;
+#if NEOPIXELS_EXIST
+  led = (float)clampAngle(-angle) + 180.0;
   led *= ((float)numLeds / 360.0);
   if (led < 0) {
     led = 0;
@@ -58,6 +60,7 @@ int toLedIndex(int angle) {
   }
   led += offset;
   led %= numLeds;
+#endif
   return led;
 }
 
